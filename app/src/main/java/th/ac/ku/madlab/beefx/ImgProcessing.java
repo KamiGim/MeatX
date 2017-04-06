@@ -26,14 +26,24 @@ public class ImgProcessing {
     int countSmall = 0;
     int countMedium = 0;
     int countLarge = 0;
+    double areaSmall = 0;
+    double areaMedium = 0;
+    double areaLarge = 0;
+    double[] xpos;
+    double[] ypos;
+    int w;
+    int h;
+    int totalNum;
+    int fatNum;
+    float fatPercent;
 
     public ImgProcessing(Bitmap scaled) {
         this.scaled = scaled;
     }
 
-    public Bitmap Process1() {
-        int w = scaled.getWidth();
-        int h = scaled.getHeight();
+    public void Process1() {
+        w = scaled.getWidth();
+        h = scaled.getHeight();
         Mat imgMat = new Mat(h, w, CvType.CV_8UC3);
         Utils.bitmapToMat(scaled, imgMat);
         Mat tmp = new Mat(h, w, CvType.CV_8UC3);
@@ -90,15 +100,15 @@ public class ImgProcessing {
         countMedium = 0;
         countLarge = 0;
 
-        double areaSmall = 0;
-        double areaMedium = 0;
-        double areaLarge = 0;
+        areaSmall = 0;
+        areaMedium = 0;
+        areaLarge = 0;
 
         List<Moments> mu = new ArrayList<Moments>(contours_fat.size());
 
 
-        double[] xpos = new double[contours_fat.size()];
-        double[] ypos = new double[contours_fat.size()];
+        xpos = new double[contours_fat.size()];
+        ypos = new double[contours_fat.size()];
 
         for (int contourIdx = 0; contourIdx < contours_fat.size(); contourIdx++) {
             double contourArea = Imgproc.contourArea(contours_fat.get(contourIdx));
@@ -136,7 +146,9 @@ public class ImgProcessing {
             }
         }
         Utils.matToBitmap(beef, scaled);
-        return scaled;
+        totalNum = Core.countNonZero(blank);
+        fatNum = Core.countNonZero(fat);
+        fatPercent = (float)fatNum/totalNum*100;
     }
 
 }
