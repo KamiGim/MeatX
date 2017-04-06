@@ -59,6 +59,17 @@
                     android:textStyle="bold"
                     android:typeface="serif" />
 
+                <RelativeLayout
+                    android:layout_width="300dp"
+                    android:layout_height="300dp">
+
+                    <com.github.mikephil.charting.charts.PieChart
+                        android:id="@+id/idPieChart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"></com.github.mikephil.charting.charts.PieChart>
+                </RelativeLayout>
+
+
                 <com.github.lzyzsd.circleprogress.ArcProgress
                     android:id="@+id/arc_progress"
                     android:layout_width="130dp"
@@ -212,6 +223,74 @@
 
                 </LinearLayout>
 
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/back"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:weightSum="1">
+
+                    <TextView
+                        android:id="@+id/txtSDX"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="0.5"
+                        android:fontFamily="sans-serif"
+                        android:gravity="bottom"
+                        android:text="SD_X"
+                        android:textColor="#000000"
+                        android:textSize="20sp"
+                        android:typeface="serif" />
+
+                    <TextView
+                        android:id="@+id/tvSDX"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.5"
+                        android:fontFamily="sans-serif"
+                        android:text="-"
+                        android:textColor="#ffbf00"
+                        android:textSize="20sp"
+                        android:typeface="serif" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/back"
+                    android:orientation="horizontal"
+                    android:padding="10dp"
+                    android:weightSum="1">
+
+                    <TextView
+                        android:id="@+id/txtSDY"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="0.5"
+                        android:fontFamily="sans-serif"
+                        android:gravity="bottom"
+                        android:text="SD_X"
+                        android:textColor="#000000"
+                        android:textSize="20sp"
+                        android:typeface="serif" />
+
+                    <TextView
+                        android:id="@+id/tvSDY"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="0.5"
+                        android:fontFamily="sans-serif"
+                        android:text="-"
+                        android:textColor="#ffbf00"
+                        android:textSize="20sp"
+                        android:typeface="serif" />
+
+                </LinearLayout>
+
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -257,6 +336,13 @@
                 android:layout_gravity="center_horizontal"
                 android:onClick="previewImg"
                 android:paddingTop="5dp" />
+
+            <ImageButton
+                android:id="@+id/imageButton2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="buShare"
+                custom:srcCompat="?attr/actionModeShareDrawable" />
 
         </LinearLayout>
     </ScrollView>

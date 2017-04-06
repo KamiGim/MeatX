@@ -18,6 +18,8 @@ import android.view.View;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
+
 import th.ac.ku.madlab.kubeef.R;
 
 public class Main2Activity extends AppCompatActivity {
@@ -26,8 +28,6 @@ public class Main2Activity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main2);
-
-
         ImageButton imgBuCam = (ImageButton) findViewById(R.id.imgBuCam);
         ImageButton imgBuGal = (ImageButton) findViewById(R.id.imgBuGal);
         imgBuCam.setOnClickListener(new View.OnClickListener() {
@@ -42,23 +42,9 @@ public class Main2Activity extends AppCompatActivity {
                 buPickGal(view);
             }
         });
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                buTakePic(view);
-//            }
-//        });
-//
-//        FloatingActionButton fabGal = (FloatingActionButton) findViewById(R.id.fabGal);
-//        fabGal.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                buPickGal(view);
-//            }
-//        });
     }
-    int tag = 1;
+
+    int TAKE_PICTURE = 1;
 
     public void buTakePic(View view) {
         CheckUserPermissions();
@@ -110,24 +96,37 @@ public class Main2Activity extends AppCompatActivity {
     void TakePicture(){
         Intent intent = new Intent();
         intent.setAction(MediaStore.ACTION_IMAGE_CAPTURE);
-        startActivityForResult(intent,tag);
+        startActivityForResult(intent,TAKE_PICTURE);
     }
 
     Bitmap img;
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == tag && resultCode == RESULT_OK){
+        if (requestCode == TAKE_PICTURE && resultCode == RESULT_OK){
             Bundle b = data.getExtras();
             img = (Bitmap) b.get("data");
+
+            try {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+
+                //Cleanup
+                stream.close();
+                img.recycle();
+
+                Intent intent = new Intent(this, DrawingActivity.class);
+                intent.putExtra("img", byteArray);
+                startActivity(intent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
 
 //            Intent intent = new Intent(this, MainActivity.class);
 //            intent.putExtra("img", img);
 //            startActivity(intent);
-
-            Intent intent = new Intent(this, DrawingActivity.class);
-            intent.putExtra("img", img);
-            startActivity(intent);
 
         }
         if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null) {
@@ -141,22 +140,31 @@ public class Main2Activity extends AppCompatActivity {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap imgFull = BitmapFactory.decodeFile(imagePath, options);
-            int nh = (int) ( imgFull.getHeight() * (256.0 / imgFull.getWidth()) );
-            Log.d("nh : ", String.valueOf(nh));
-            img = Bitmap.createScaledBitmap(imgFull, 256, nh, true);
-            if(imgFull!=null)
-            {
+
+            int nh = (int) ( imgFull.getHeight() * (512.0 / imgFull.getWidth()) );
+            img = Bitmap.createScaledBitmap(imgFull, 512, nh, true);
+
+            try {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
+
+                //Cleanup
+                stream.close();
+                img.recycle();
                 imgFull.recycle();
-                imgFull=null;
+
+                Intent intent = new Intent(this, DrawingActivity.class);
+                intent.putExtra("img", byteArray);
+                startActivity(intent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
 //            Intent intent = new Intent(this, MainActivity.class);
 //            intent.putExtra("img", img);
 //            startActivity(intent);
-
-            Intent intent = new Intent(this, DrawingActivity.class);
-            intent.putExtra("img", img);
-            startActivity(intent);
 
             cursor.close();
         }

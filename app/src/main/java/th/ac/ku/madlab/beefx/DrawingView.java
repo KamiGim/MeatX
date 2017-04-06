@@ -22,6 +22,9 @@ class DrawingView extends View {
     Path mPath;
     Paint   mBitmapPaint;
 
+    private int width;
+    private  int height;
+
     public DrawingView(Context context) {
         super(context);
         // TODO Auto-generated constructor stub
@@ -36,11 +39,13 @@ class DrawingView extends View {
 
         mPath = new Path();
         mBitmapPaint = new Paint();
-        mBitmapPaint.setColor(Color.RED);
+        mBitmapPaint.setColor(Color.GREEN);
     }
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        width =w;
+        height =h;
         mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(mBitmap);
     }
@@ -77,6 +82,30 @@ class DrawingView extends View {
         // kill this so we don't double draw
         mPath.reset();
         // mPath= new Path();
+    }
+
+    public void clear()
+    {
+        mBitmap = Bitmap.createBitmap(width,height ,Bitmap.Config.ARGB_8888);
+
+        //Log.d("BITMAP","Restoring...");
+        //mBitmap=BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+
+        mCanvas = new Canvas(mBitmap);
+
+        mPath = new Path();
+        mBitmapPaint = new Paint(Paint.DITHER_FLAG);
+
+        //Added later..
+        mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setDither(true);
+        mPaint.setColor(0xFFFF0000);
+        mPaint.setStyle(Paint.Style.STROKE);
+        mPaint.setStrokeJoin(Paint.Join.ROUND);
+        mPaint.setStrokeCap(Paint.Cap.ROUND);
+        mPaint.setStrokeWidth(5);
+        invalidate();
     }
 
     @Override
