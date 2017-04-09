@@ -1,7 +1,5 @@
 package th.ac.ku.madlab.beefx;
 
-import th.ac.ku.madlab.kubeef.R;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.PixelFormat;

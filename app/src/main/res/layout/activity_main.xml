@@ -60,8 +60,9 @@
                     android:typeface="serif" />
 
                 <RelativeLayout
-                    android:layout_width="300dp"
-                    android:layout_height="300dp">
+                    android:layout_width="200dp"
+                    android:layout_height="200dp"
+                    android:layout_gravity="center_horizontal">
 
                     <com.github.mikephil.charting.charts.PieChart
                         android:id="@+id/idPieChart"
@@ -76,7 +77,7 @@
                     android:layout_height="130dp"
                     android:layout_gravity="center"
                     android:layout_marginBottom="5dp"
-                    custom:arc_bottom_text="FAT"
+                    custom:arc_bottom_text="Fat"
                     custom:arc_bottom_text_size="30dp"
                     custom:arc_finished_color="#247BA0"
                     custom:arc_progress="0"

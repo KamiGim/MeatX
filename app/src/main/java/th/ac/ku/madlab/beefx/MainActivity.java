@@ -3,6 +3,7 @@ package th.ac.ku.madlab.beefx;
 
 import android.Manifest;
 import android.app.Dialog;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -72,11 +73,11 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.sql.Blob;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-
-import th.ac.ku.madlab.kubeef.R;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -96,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private String[] xData = {"Small", "Medium" , "Big"};
     PieChart pieChart;
 
+    DBManager dbManager;
+
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -112,6 +115,17 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
+    public static double round(double value, int scale) {
+        return Math.round(value * Math.pow(10, scale)) / Math.pow(10, scale);
+    }
+
+    private String getDateTime() {
+        SimpleDateFormat dateFormat = new SimpleDateFormat(
+                "yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+        Date date = new Date();
+        return dateFormat.format(date);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -161,16 +175,18 @@ public class MainActivity extends AppCompatActivity {
 
         String latitude = getIntent().getStringExtra("lat");
         String longtitude  = getIntent().getStringExtra("long");
+        if (latitude==null){latitude="0.0";}
+        if (longtitude==null){longtitude="0.0";}
         TelephonyManager telephonyManager;
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         String deviceId = telephonyManager.getDeviceId();
 
-        ImgProcessing imgPro = new ImgProcessing(img);
+        ImgProcessing imgPro = new ImgProcessing(img,imgOri);
         imgPro.Process1();
         Statistics statX = new Statistics(imgPro.xpos);
         Statistics statY = new Statistics(imgPro.ypos);
-        double sdX = statX.getStdDev();
-        double sdY = statY.getStdDev();
+        double sdX = round(statX.getStdDev(),2);
+        double sdY = round(statY.getStdDev(),2);
         TextView tvSDX = (TextView) findViewById(R.id.tvSDX);
         TextView tvSDY = (TextView) findViewById(R.id.tvSDY);
         tvSDX.setText(Double.toString(sdX));
@@ -184,17 +200,123 @@ public class MainActivity extends AppCompatActivity {
         yData = new float[]{(float)imgPro.areaSmall, (float)imgPro.areaMedium, (float)imgPro.areaLarge};
         addDataSet(yData);
 
-        Log.d("imgPro",Integer.toString(imgPro.countSmall));
+        RandomName rn = new RandomName();
+        String tmpName = rn.randomIdentifier();
+        double fatPercent = round(imgPro.fatPercent,2);
+        int countSmall = imgPro.countSmall;
+        int countMedium = imgPro.countMedium;
+        int countLarge = imgPro.countLarge;
+
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        img.compress(Bitmap.CompressFormat.PNG,20,byteArrayOutputStream);
+        String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
+
+        dbManager = new DBManager(this);
+        ContentValues values= new ContentValues();
+        values.put("longtitude",longtitude);
+        values.put("latitude",latitude);
+        values.put("device_id",deviceId);
+        values.put("sdX",sdX);
+        values.put("sdY",sdY);
+        values.put("fatPercent",fatPercent);
+        values.put("countSmall",countSmall);
+        values.put("countMedium",countMedium);
+        values.put("countLarge",countLarge);
+        values.put("imgPath",tmpName);
+        values.put("img",byteArrayOutputStream.toByteArray());
+        String time = getDateTime();
+        values.put("created_at",time );
+        boolean isSent = false;
 
 //        String url="http://madlab.cpe.ku.ac.th/supab/tracking.php?log="+  longtitude+"&lat="+
-//                latitude+"&device_id="+deviceId;
-        String url="http://madlab.cpe.ku.ac.th/supab/tracking.php?log="+  longtitude+"&lat="+
-                latitude+"&device_id="+deviceId+"&sdX="+sdX+"&sdY="+sdY+ "&fatPercent="+imgPro.fatPercent+
-                "&countSmall="+imgPro.countSmall+"&countMedium="+imgPro.countMedium+"&countLarge="+imgPro.countLarge;
+//                latitude+"&device_id="+deviceId+"&sdX="+sdX+"&sdY="+sdY+ "&fatPercent="+imgPro.fatPercent+
+//                "&countSmall="+imgPro.countSmall+"&countMedium="+imgPro.countMedium+"&countLarge="+imgPro.countLarge+
+//                "&imgPath="+tmpName+"&imgArr="+encodedImage;
+
+        String url="http://madlab.cpe.ku.ac.th/supab/tracking-img.php";
+
         Log.d("Tracking Url",url);
 
         if (isNetworkAvailable()){
-            new MyAsyncTaskgetNews().execute(url);
+//            new MyAsyncTaskgetNews().execute(url);
+            isSent = true;
+            new MyAsyncTaskgetNews().execute(url,longtitude,latitude,deviceId,Double.toString(sdX),
+                    Double.toString(sdY),Double.toString(fatPercent),Integer.toString(countSmall),
+                    Integer.toString(countMedium),Integer.toString(countLarge),tmpName,encodedImage);
+
+            String[] SelectionsArgs = {"0"};
+            Cursor cursor=dbManager.query(null,"status = ? ",SelectionsArgs,"status");
+            if (cursor.moveToFirst()){
+                String tableData="";
+                do {
+
+                    tableData+=cursor.getString(cursor.getColumnIndex("ID"))+ ","+
+                            cursor.getString( cursor.getColumnIndex("imgPath")) +"::";
+                    longtitude = cursor.getString( cursor.getColumnIndex("longtitude"));
+                    latitude = cursor.getString( cursor.getColumnIndex("latitude"));
+                    deviceId = cursor.getString( cursor.getColumnIndex("device_id"));
+                    sdX = cursor.getDouble(cursor.getColumnIndex("sdX"));
+                    sdY = cursor.getDouble( cursor.getColumnIndex("sdY"));
+                    fatPercent = cursor.getDouble( cursor.getColumnIndex("fatPercent"));
+                    countSmall = cursor.getInt( cursor.getColumnIndex("countSmall"));
+                    countMedium = cursor.getInt( cursor.getColumnIndex("countMedium"));
+                    countLarge = cursor.getInt( cursor.getColumnIndex("countLarge"));
+                    tmpName = cursor.getString( cursor.getColumnIndex("imgPath"));
+                    byte[] imgBlob = cursor.getBlob(cursor.getColumnIndex("img"));
+                    time = cursor.getString( cursor.getColumnIndex("created_at"));
+                    encodedImage = Base64.encodeToString(imgBlob, Base64.DEFAULT);
+
+                    values= new ContentValues();
+                    values.put("longtitude",longtitude);
+                    values.put("latitude",latitude);
+                    values.put("device_id",deviceId);
+                    values.put("sdX",sdX);
+                    values.put("sdY",sdY);
+                    values.put("fatPercent",fatPercent);
+                    values.put("countSmall",countSmall);
+                    values.put("countMedium",countMedium);
+                    values.put("countLarge",countLarge);
+                    values.put("imgPath",tmpName);
+                    values.put("img",byteArrayOutputStream.toByteArray());
+                    values.put("status","1");
+                    values.put("created_at", time);
+                    //values.put(DBManager.ColID,RecordID);
+                    String[] SelectionArgs={String.valueOf(cursor.getString(cursor.getColumnIndex("ID")))};
+                    dbManager.Update(values,"ID=?",SelectionArgs);
+
+                    long id= dbManager.Update(values,"ID=?",SelectionArgs);
+                    if (id>0)
+                        Toast.makeText(getApplicationContext(),"Data is updated and user id:"
+                                +cursor.getString(cursor.getColumnIndex("ID")),Toast.LENGTH_LONG).show();
+                    else
+                        Toast.makeText(getApplicationContext(),"cannot update",Toast.LENGTH_LONG).show();
+
+                    new MyAsyncTaskgetNews().execute(url,longtitude,latitude,deviceId,Double.toString(sdX),
+                            Double.toString(sdY),Double.toString(fatPercent),Integer.toString(countSmall),
+                            Integer.toString(countMedium),Integer.toString(countLarge),tmpName,encodedImage);
+
+                }while (cursor.moveToNext());
+                Toast.makeText(getApplicationContext(),"uploaded successfully",Toast.LENGTH_LONG).show();
+            }
+        }
+
+        values.put("status",isSent);
+        long id= dbManager.Insert(values);
+        if (id>0)
+            Toast.makeText(getApplicationContext(),"Data is added and user id:"+id,Toast.LENGTH_LONG).show();
+        else
+            Toast.makeText(getApplicationContext(),"cannot insert",Toast.LENGTH_LONG).show();
+
+        String[] SelectionsArgs = {"1"};
+        Cursor cursor=dbManager.query(null,"status = ? ",SelectionsArgs,"status");
+        if (cursor.moveToFirst()){
+            String tableData="";
+            do {
+                tableData+=cursor.getString(cursor.getColumnIndex("ID"))+ ","+
+                        cursor.getString( cursor.getColumnIndex("imgPath")) +"::";
+
+            }while (cursor.moveToNext());
+            Toast.makeText(getApplicationContext(),tableData,Toast.LENGTH_LONG).show();
         }
 
 //        imageView.setImageBitmap(img);
@@ -471,6 +593,35 @@ public class MainActivity extends AppCompatActivity {
                 HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
                 //waiting for 7000ms for response
                 urlConnection.setConnectTimeout(7000);//set timeout to 5 seconds
+                JSONObject jsonObject;
+                jsonObject = new JSONObject();
+                jsonObject.put("longitude", params[1]);
+                jsonObject.put("latitude", params[2]);
+                jsonObject.put("device_id", params[3]);
+                jsonObject.put("sdX", params[4]);
+                jsonObject.put("sdY", params[5]);
+                jsonObject.put("fatPercent", params[6]);
+                jsonObject.put("countSmall", params[7]);
+                jsonObject.put("countMedium", params[8]);
+                jsonObject.put("countLarge", params[9]);
+                jsonObject.put("imgPath", params[10]);
+                jsonObject.put("imgArr", params[11]);
+                String data = jsonObject.toString();
+                urlConnection.setDoOutput(true);
+                urlConnection.setDoInput(true);
+                urlConnection.setRequestMethod("POST");
+                urlConnection.setRequestProperty("USER-AGENT", "Mozilla/5.0");
+                urlConnection.setRequestProperty("ACCEPT-LANGUAGE", "en-US,en;0.5");
+                urlConnection.setFixedLengthStreamingMode(data.getBytes().length);
+                urlConnection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+                OutputStream out = new BufferedOutputStream(urlConnection.getOutputStream());
+                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
+                writer.write(data);
+                Log.d("Tester", "Data to php = " + data);
+                writer.flush();
+                writer.close();
+                out.close();
+                urlConnection.connect();
 
                 try {
                     //getting the response data
@@ -496,38 +647,23 @@ public class MainActivity extends AppCompatActivity {
 
             } catch (Exception ex) {
             }
-
-
         }
-
         protected void onPostExecute(String  result2){
 
-
         }
-
-
-
-
     }
 
     // this method convert any stream to string
     public static String ConvertInputToStringNoChange(InputStream inputStream) {
-
         BufferedReader bureader=new BufferedReader( new InputStreamReader(inputStream));
         String line ;
         String linereultcal="";
-
         try{
             while((line=bureader.readLine())!=null) {
-
                 linereultcal+=line;
-
             }
             inputStream.close();
-
-
         }catch (Exception ex){}
-
         return linereultcal;
     }
 
