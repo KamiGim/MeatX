@@ -52,8 +52,10 @@
 
         <activity
             android:name=".AboutActivity"
-            android:label="@string/title_activity_about" />
-        <activity android:name=".UniversityActivity"></activity>
+            android:label="About Us" />
+        <activity
+            android:name=".UniversityActivity"
+            android:label="Kasetsart University"></activity>
     </application>
 
 </manifest>

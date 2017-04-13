@@ -417,6 +417,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     int tag = 1;
+    int TAKE_PICTURE = 1;
 
     public void buTakePic(View view) {
         CheckUserPermissions();
@@ -477,23 +478,31 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == tag && resultCode == RESULT_OK){
+        if (requestCode == TAKE_PICTURE && resultCode == RESULT_OK){
             Bundle b = data.getExtras();
             img = (Bitmap) b.get("data");
-            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
-            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
 
-            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
-            new MainActivity.UploadImage(img,"test").execute();
-            //recycle Bitmap object
-//            if(img!=null)
-//            {
-//                img.recycle();
-//                img=null;
-//            }
+            try {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
 
-            imageView.setImageBitmap(imgHalf);
-//            new MainActivity.UploadImage(img,"test").execute();
+                //Cleanup
+                stream.close();
+                img.recycle();
+
+                Intent intent = new Intent(this, DrawingActivity.class);
+                intent.putExtra("img", byteArray);
+                startActivity(intent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+//            Intent intent = new Intent(this, MainActivity.class);
+//            intent.putExtra("img", img);
+//            startActivity(intent);
+
         }
         if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null) {
             // Let's read picked image data - its URI
@@ -503,32 +512,76 @@ public class MainActivity extends AppCompatActivity {
             Cursor cursor = getContentResolver().query(pickedImage, filePath, null, null, null);
             cursor.moveToFirst();
             String imagePath = cursor.getString(cursor.getColumnIndex(filePath[0]));
-
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-            img = BitmapFactory.decodeFile(imagePath, options);
-            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
-            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
-            //scaled
-            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
+            Bitmap imgFull = BitmapFactory.decodeFile(imagePath, options);
 
-            Log.d("Path","Path : " + imagePath);
-//            Picasso.with(this).load(pickedImage).fit().centerInside().into(imageView);
+            int nh = (int) ( imgFull.getHeight() * (512.0 / imgFull.getWidth()) );
+            img = Bitmap.createScaledBitmap(imgFull, 512, nh, true);
 
-//            imageView.setImageBitmap(imgHalf);
-//            new MainActivity.UploadImage(img,"test").execute();
+            try {
+                ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                byte[] byteArray = stream.toByteArray();
 
-            //recycle Bitmap object
-//            if(img!=null)
-//            {
-//                img.recycle();
-//                img=null;
-//            }
-//            new MainActivity.UploadImage(img,"test").execute();
+                //Cleanup
+                stream.close();
+                img.recycle();
+                imgFull.recycle();
 
-            // At the end remember to close the cursor or you will end with the RuntimeException!
+                Intent intent = new Intent(this, DrawingActivity.class);
+                intent.putExtra("img", byteArray);
+                startActivity(intent);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+//            Intent intent = new Intent(this, MainActivity.class);
+//            intent.putExtra("img", img);
+//            startActivity(intent);
+
             cursor.close();
         }
+
+//        if (requestCode == tag && resultCode == RESULT_OK){
+//            Bundle b = data.getExtras();
+//            img = (Bitmap) b.get("data");
+//            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
+//            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
+//
+//            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
+//            new MainActivity.UploadImage(img,"test").execute();
+//            //recycle Bitmap object
+////            if(img!=null)
+////            {
+////                img.recycle();
+////                img=null;
+////            }
+//
+//            imageView.setImageBitmap(imgHalf);
+////            new MainActivity.UploadImage(img,"test").execute();
+//        }
+//        if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null) {
+//            // Let's read picked image data - its URI
+//            Uri pickedImage = data.getData();
+//            // Let's read picked image path using content resolver
+//            String[] filePath = { MediaStore.Images.Media.DATA };
+//            Cursor cursor = getContentResolver().query(pickedImage, filePath, null, null, null);
+//            cursor.moveToFirst();
+//            String imagePath = cursor.getString(cursor.getColumnIndex(filePath[0]));
+//
+//            BitmapFactory.Options options = new BitmapFactory.Options();
+//            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+//            img = BitmapFactory.decodeFile(imagePath, options);
+//            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
+//            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
+//            //scaled
+//            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
+//
+//            Log.d("Path","Path : " + imagePath);
+//            cursor.close();
+//        }
     }
 
     public void previewImg(View view) {
