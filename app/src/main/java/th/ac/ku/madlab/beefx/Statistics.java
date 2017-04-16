@@ -7,45 +7,73 @@ import java.util.Arrays;
  */
 
 public class Statistics {
-    double[] data;
+    double[] dataX;
+    double[] dataY;
     int size;
 
-    public Statistics(double[] data)
+    public Statistics(double[] dataX,double[] dataY)
     {
-        this.data = data;
-        size = data.length;
+        this.dataX = dataX;
+        this.dataY = dataY;
+        size = dataX.length;
     }
 
-    double getMean()
+    double getMeanX()
     {
         double sum = 0.0;
-        for(double a : data)
+        for(double a : dataX)
             sum += a;
         return sum/size;
     }
 
-    double getVariance()
+    double getMeanY()
     {
-        double mean = getMean();
+        double sum = 0.0;
+        for(double a : dataY)
+            sum += a;
+        return sum/size;
+    }
+
+    double getVarianceX()
+    {
+        double mean = getMeanX();
         double temp = 0;
-        for(double a :data)
+        for(double a :dataX)
             temp += (a-mean)*(a-mean);
         return temp/size;
     }
 
-    double getStdDev()
+    double getVarianceY()
     {
-        return Math.sqrt(getVariance());
+        double mean = getMeanY();
+        double temp = 0;
+        for(double a :dataY)
+            temp += (a-mean)*(a-mean);
+        return temp/size;
     }
 
-    public double median()
+    double getAvgDistance()
     {
-        Arrays.sort(data);
+        double meanX = getMeanX();
+        double meanY = getMeanY();
 
-        if (data.length % 2 == 0)
-        {
-            return (data[(data.length / 2) - 1] + data[data.length / 2]) / 2.0;
+        double temp = 0;
+        for(int i = 0;i < size;i++) {
+            double deltaX = dataX[i] - meanX;
+            double deltaY = dataY[i] - meanY;
+            temp += Math.sqrt((deltaY) * (deltaY) + (deltaX) * (deltaX));
         }
-        return data[data.length / 2];
+        return temp/size;
     }
+
+    double getStdDevX()
+    {
+        return Math.sqrt(getVarianceX());
+    }
+
+    double getStdDevY()
+    {
+        return Math.sqrt(getVarianceY());
+    }
+
 }

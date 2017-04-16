@@ -271,9 +271,30 @@ public class DrawingActivity extends AppCompatActivity implements GoogleApiClien
         mDrawingPad.setDrawingCacheEnabled(true);
         Bitmap b = Bitmap.createBitmap(mDrawingPad.getDrawingCache(true));
 
-        int w = b.getWidth();
-        int h = b.getHeight();
-        Bitmap scale = Bitmap.createScaledBitmap(img, w, h, true);
+        int width = b.getWidth();
+        int height = b.getHeight();
+
+        int maxWidth = 640;
+        int maxHeight = 640;
+
+        if (width > height) {
+            // landscape
+            float ratio = (float) width / maxWidth;
+            width = maxWidth;
+            height = (int)(height / ratio);
+        } else if (height > width) {
+            // portrait
+            float ratio = (float) height / maxHeight;
+            height = maxHeight;
+            width = (int)(width / ratio);
+        } else {
+            // square
+            height = maxHeight;
+            width = maxWidth;
+        }
+
+        Bitmap scale = Bitmap.createScaledBitmap(img, width, height, true);
+        b = Bitmap.createScaledBitmap(b, width, height, true);
 //        img.recycle();
 
         try {

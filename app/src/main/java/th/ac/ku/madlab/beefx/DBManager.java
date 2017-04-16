@@ -23,12 +23,20 @@ public class DBManager {
             "[device_id] VARCHAR(128)  NULL,\n" +
             "[sdX] FLOAT  NULL,\n" +
             "[sdY] FLOAT  NULL,\n" +
+            "[avgDistance] FLOAT  NULL,\n" +
             "[fatPercent] FLOAT  ,\n" +
+            "[areaSmall] FLOAT  ,\n" +
+            "[areaMedium] FLOAT  ,\n" +
+            "[areaLarge] FLOAT  ,\n" +
             "[countSmall] INTEGER  ,\n" +
             "[countMedium] INTEGER  ,\n" +
             "[countLarge] INTEGER  ,\n" +
             "[imgPath] VARCHAR(256)  ,\n" +
             "[img] BLOB  ,\n" +
+            "[imgOri] BLOB  ,\n" +
+            "[imgFatSmall] BLOB  ,\n" +
+            "[imgFatMedium] BLOB  ,\n" +
+            "[imgFatLarge] BLOB  ,\n" +
             "[status] BOOLEAN ,\n"+
             "[created_at] DATETIME " +");";
 
@@ -52,8 +60,6 @@ public class DBManager {
             onCreate(db);
         }
     }
-
-
 
     public DBManager(Context context){
 

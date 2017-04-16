@@ -55,7 +55,8 @@
             android:label="About Us" />
         <activity
             android:name=".UniversityActivity"
-            android:label="Kasetsart University"></activity>
+            android:label="Kasetsart University" />
+        <activity android:name=".DetailActivity"></activity>
     </application>
 
 </manifest>

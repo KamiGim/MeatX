@@ -92,6 +92,8 @@ public class Main2Activity extends AppCompatActivity implements NavigationView.O
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intent = new Intent(this, AboutActivity.class);
+            startActivity(intent);
             return true;
         }
 

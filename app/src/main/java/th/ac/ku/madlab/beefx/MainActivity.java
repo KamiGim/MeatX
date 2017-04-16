@@ -2,6 +2,7 @@ package th.ac.ku.madlab.beefx;
 
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.Dialog;
 import android.content.ContentValues;
 import android.content.Context;
@@ -20,15 +21,18 @@ import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.ScrollView;
@@ -44,6 +48,7 @@ import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONObject;
 import org.opencv.android.BaseLoaderCallback;
@@ -89,15 +94,24 @@ public class MainActivity extends AppCompatActivity {
     TextView txtSFat;
     TextView txtMFat;
     TextView txtLFat;
+    TextView txtAvgDis;
     ScrollView scrollView;
+    Button buMoreInfo;
+    LinearLayout LLInfo;
 
     View rootView;
 
-    float[] yData = {25.3f, 10.6f, 66.76f};
-    private String[] xData = {"Small", "Medium" , "Big"};
+    double[] yData = {25.3f, 10.6f, 66.76f};
+    private String[] xData = {"Small", "Medium" , "Large"};
     PieChart pieChart;
 
     DBManager dbManager;
+
+    Bitmap img;
+    Bitmap imgResult;
+    Bitmap bmpSmall;
+    Bitmap bmpMed;
+    Bitmap bmpLarge;
 
     private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -127,6 +141,38 @@ public class MainActivity extends AppCompatActivity {
         return dateFormat.format(date);
     }
 
+    private Uri getImageUri(Bitmap inImage) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(getContentResolver(), inImage, "Title", null);
+        return Uri.parse(path);
+    }
+
+    public void bitmapIntoImageView(ImageView imageView, Bitmap bitmap){
+        Uri imageUri = getImageUri(bitmap);
+        Picasso.with(this).load(imageUri).into(imageView);
+    }
+
+    public void findElement(){
+        pieChart = (PieChart) findViewById(R.id.idPieChart);
+
+        txtAnswer = (TextView) findViewById(R.id.textViewSize);
+        imageView = (ImageView) findViewById(R.id.imageViewPreview);
+        bar = (ProgressBar)findViewById(R.id.progressBar);
+        bar.setVisibility(View.INVISIBLE);
+        rating = (RatingBar) findViewById(R.id.ratingBar);
+        fatProgress = (ArcProgress) findViewById(R.id.arc_progress);
+        txtSFat = (TextView) findViewById(R.id.tvSFat);
+        txtMFat = (TextView) findViewById(R.id.tvMFat);
+        txtLFat = (TextView) findViewById(R.id.tvLFat);
+        txtAvgDis = (TextView) findViewById(R.id.tvAvgDis);
+        scrollView = (ScrollView) findViewById(R.id.scrollAll);
+        rootView = getWindow().getDecorView().findViewById(android.R.id.content);
+        buMoreInfo = (Button) findViewById(R.id.buMoreInfo);
+        LLInfo = (LinearLayout) findViewById(R.id.LLInfo);
+
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -142,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 //        byte[] byteArray = getIntent().getByteArrayExtra("imageWithCrop");
 //        Bitmap img = BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
 
-        Bitmap img = null;
+        img = null;
         Bitmap imgOri = null;
         String filenameRedMask = getIntent().getStringExtra("imgRedMask");
         String filenameOri  = getIntent().getStringExtra("imgOri");
@@ -159,19 +205,12 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main);
 
-        pieChart = (PieChart) findViewById(R.id.idPieChart);
-        pieChartSetting(pieChart);
-        txtAnswer = (TextView) findViewById(R.id.textViewSize);
-        imageView = (ImageView) findViewById(R.id.imageViewPreview);
-        bar = (ProgressBar)findViewById(R.id.progressBar);
-        bar.setVisibility(View.INVISIBLE);
-        rating = (RatingBar) findViewById(R.id.ratingBar);
-        fatProgress = (ArcProgress) findViewById(R.id.arc_progress);
-        txtSFat = (TextView) findViewById(R.id.tvSFat);
-        txtMFat = (TextView) findViewById(R.id.tvMFat);
-        txtLFat = (TextView) findViewById(R.id.tvLFat);
-        scrollView = (ScrollView) findViewById(R.id.scrollAll);
-        rootView = getWindow().getDecorView().findViewById(android.R.id.content);
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setHomeButtonEnabled(true);
+        actionBar.setDisplayHomeAsUpEnabled(true);
+
+        findElement();
+        LLInfo.setVisibility(View.GONE);
 
         String latitude = getIntent().getStringExtra("lat");
         String longtitude  = getIntent().getStringExtra("long");
@@ -181,24 +220,61 @@ public class MainActivity extends AppCompatActivity {
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         String deviceId = telephonyManager.getDeviceId();
 
-        ImgProcessing imgPro = new ImgProcessing(img,imgOri);
-        imgPro.Process1();
-        Statistics statX = new Statistics(imgPro.xpos);
-        Statistics statY = new Statistics(imgPro.ypos);
-        double sdX = round(statX.getStdDev(),2);
-        double sdY = round(statY.getStdDev(),2);
+        Bitmap bmpSmall = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap bmpMed = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.ARGB_8888);
+        Bitmap bmpLarge = Bitmap.createBitmap(img.getWidth(), img.getHeight(), Bitmap.Config.ARGB_8888);
+
+        final ImgProcessing imgPro = new ImgProcessing(img,imgOri,bmpSmall,bmpMed,bmpLarge);
+        imgPro.Process2();
+        Statistics stat = new Statistics(imgPro.xpos,imgPro.ypos);
+        double sdX = round(stat.getStdDevX(),2);
+        double sdY = round(stat.getStdDevY(),2);
+        double avgDistance = round(stat.getAvgDistance(),2);
         TextView tvSDX = (TextView) findViewById(R.id.tvSDX);
         TextView tvSDY = (TextView) findViewById(R.id.tvSDY);
         tvSDX.setText(Double.toString(sdX));
         tvSDY.setText(Double.toString(sdY));
+        txtAvgDis.setText(Double.toString(avgDistance));
         txtAnswer.setText(Integer.toString(imgPro.w)+"x"+Integer.toString(imgPro.h));
         txtSFat.setText(Integer.toString(imgPro.countSmall));
         txtMFat.setText(Integer.toString(imgPro.countMedium));
         txtLFat.setText(Integer.toString(imgPro.countLarge));
         fatProgress.setProgress((int)imgPro.fatPercent);
-        imageView.setImageBitmap(imgPro.scaled);
-        yData = new float[]{(float)imgPro.areaSmall, (float)imgPro.areaMedium, (float)imgPro.areaLarge};
-        addDataSet(yData);
+        imgResult = imgPro.result;
+
+        imageView.setImageBitmap(imgResult);
+        double sum = imgPro.areaSmall + imgPro.areaMedium + imgPro.areaLarge;
+
+        double areaSmall = round(imgPro.areaSmall/sum*100,2);
+        double areaMedium = round(imgPro.areaMedium/sum*100,2);
+        double areaLarge = round(imgPro.areaLarge/sum*100,2);
+
+        yData = new double[]{areaSmall,areaMedium , areaLarge};
+        pieChartSetting(pieChart,yData,bmpSmall,bmpMed,bmpLarge);
+
+        final Bitmap finalImgOri = imgOri;
+
+        imageView.setOnClickListener(new View.OnClickListener()
+        {
+            private boolean toggle=false;
+            @Override
+            public void onClick(View v)
+            {
+                Log.d("toggle",Boolean.toString(toggle));
+                if(toggle)
+                {
+//                    imageView.setImageBitmap(imgResult);
+                    bitmapIntoImageView(imageView,imgResult);
+                    toggle=false;
+                }
+                else
+                {
+//                    imageView.setImageBitmap(imgPro.scaled);
+                    bitmapIntoImageView(imageView, finalImgOri);
+                    toggle=true;
+                }
+            }
+        });
 
         RandomName rn = new RandomName();
         String tmpName = rn.randomIdentifier();
@@ -208,8 +284,16 @@ public class MainActivity extends AppCompatActivity {
         int countLarge = imgPro.countLarge;
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        img.compress(Bitmap.CompressFormat.PNG,20,byteArrayOutputStream);
+        img.compress(Bitmap.CompressFormat.PNG,50,byteArrayOutputStream);
         String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
+        ByteArrayOutputStream byteArrayOutputStreamOri = new ByteArrayOutputStream();
+        imgOri.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStreamOri);
+        ByteArrayOutputStream byteArrayOutputStream_S = new ByteArrayOutputStream();
+        bmpSmall.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream_S);
+        ByteArrayOutputStream byteArrayOutputStream_M = new ByteArrayOutputStream();
+        bmpMed.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream_M);
+        ByteArrayOutputStream byteArrayOutputStream_L = new ByteArrayOutputStream();
+        bmpLarge.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream_L);
 
         dbManager = new DBManager(this);
         ContentValues values= new ContentValues();
@@ -218,12 +302,20 @@ public class MainActivity extends AppCompatActivity {
         values.put("device_id",deviceId);
         values.put("sdX",sdX);
         values.put("sdY",sdY);
+        values.put("avgDistance",avgDistance);
         values.put("fatPercent",fatPercent);
         values.put("countSmall",countSmall);
         values.put("countMedium",countMedium);
         values.put("countLarge",countLarge);
+        values.put("areaSmall",areaSmall);
+        values.put("areaMedium",areaMedium);
+        values.put("areaLarge",areaLarge);
         values.put("imgPath",tmpName);
         values.put("img",byteArrayOutputStream.toByteArray());
+        values.put("imgOri",byteArrayOutputStreamOri.toByteArray());
+        values.put("imgFatSmall",byteArrayOutputStream_S.toByteArray());
+        values.put("imgFatMedium",byteArrayOutputStream_M.toByteArray());
+        values.put("imgFatLarge",byteArrayOutputStream_L.toByteArray());
         String time = getDateTime();
         values.put("created_at",time );
         boolean isSent = false;
@@ -247,44 +339,56 @@ public class MainActivity extends AppCompatActivity {
             String[] SelectionsArgs = {"0"};
             Cursor cursor=dbManager.query(null,"status = ? ",SelectionsArgs,"status");
             if (cursor.moveToFirst()){
-                String tableData="";
                 do {
-
-                    tableData+=cursor.getString(cursor.getColumnIndex("ID"))+ ","+
-                            cursor.getString( cursor.getColumnIndex("imgPath")) +"::";
                     longtitude = cursor.getString( cursor.getColumnIndex("longtitude"));
                     latitude = cursor.getString( cursor.getColumnIndex("latitude"));
                     deviceId = cursor.getString( cursor.getColumnIndex("device_id"));
                     sdX = cursor.getDouble(cursor.getColumnIndex("sdX"));
                     sdY = cursor.getDouble( cursor.getColumnIndex("sdY"));
+                    avgDistance = cursor.getDouble( cursor.getColumnIndex("avgDistance"));
                     fatPercent = cursor.getDouble( cursor.getColumnIndex("fatPercent"));
                     countSmall = cursor.getInt( cursor.getColumnIndex("countSmall"));
                     countMedium = cursor.getInt( cursor.getColumnIndex("countMedium"));
                     countLarge = cursor.getInt( cursor.getColumnIndex("countLarge"));
+                    areaSmall = cursor.getDouble( cursor.getColumnIndex("areaSmall"));
+                    areaMedium = cursor.getDouble( cursor.getColumnIndex("areaMedium"));
+                    areaLarge = cursor.getDouble( cursor.getColumnIndex("areaLarge"));
                     tmpName = cursor.getString( cursor.getColumnIndex("imgPath"));
                     byte[] imgBlob = cursor.getBlob(cursor.getColumnIndex("img"));
+                    byte[] imgBlobOri = cursor.getBlob(cursor.getColumnIndex("imgOri"));
+                    byte[] imgBlobS = cursor.getBlob(cursor.getColumnIndex("imgFatSmall"));
+                    byte[] imgBlobM = cursor.getBlob(cursor.getColumnIndex("imgFatMedium"));
+                    byte[] imgBlobL = cursor.getBlob(cursor.getColumnIndex("imgFatLarge"));
                     time = cursor.getString( cursor.getColumnIndex("created_at"));
                     encodedImage = Base64.encodeToString(imgBlob, Base64.DEFAULT);
 
-                    values= new ContentValues();
-                    values.put("longtitude",longtitude);
-                    values.put("latitude",latitude);
-                    values.put("device_id",deviceId);
-                    values.put("sdX",sdX);
-                    values.put("sdY",sdY);
-                    values.put("fatPercent",fatPercent);
-                    values.put("countSmall",countSmall);
-                    values.put("countMedium",countMedium);
-                    values.put("countLarge",countLarge);
-                    values.put("imgPath",tmpName);
-                    values.put("img",byteArrayOutputStream.toByteArray());
-                    values.put("status","1");
-                    values.put("created_at", time);
+                    ContentValues values1= new ContentValues();
+                    values1.put("longtitude",longtitude);
+                    values1.put("latitude",latitude);
+                    values1.put("device_id",deviceId);
+                    values1.put("sdX",sdX);
+                    values1.put("sdY",sdY);
+                    values1.put("avgDistance",avgDistance);
+                    values1.put("fatPercent",fatPercent);
+                    values1.put("countSmall",countSmall);
+                    values1.put("countMedium",countMedium);
+                    values1.put("countLarge",countLarge);
+                    values1.put("areaSmall",areaSmall);
+                    values1.put("areaMedium",areaMedium);
+                    values1.put("areaLarge",areaLarge);
+                    values1.put("imgPath",tmpName);
+                    values1.put("img",imgBlob);
+                    values1.put("imgOri",imgBlobOri);
+                    values1.put("imgFatSmall",imgBlobS);
+                    values1.put("imgFatMedium",imgBlobM);
+                    values1.put("imgFatLarge",imgBlobL);
+                    values1.put("status","1");
+                    values1.put("created_at", time);
                     //values.put(DBManager.ColID,RecordID);
                     String[] SelectionArgs={String.valueOf(cursor.getString(cursor.getColumnIndex("ID")))};
-                    dbManager.Update(values,"ID=?",SelectionArgs);
+//                    dbManager.Update(values1,"ID=?",SelectionArgs);
 
-                    long id= dbManager.Update(values,"ID=?",SelectionArgs);
+                    long id= dbManager.Update(values1,"ID=?",SelectionArgs);
                     if (id>0)
                         Toast.makeText(getApplicationContext(),"Data is updated and user id:"
                                 +cursor.getString(cursor.getColumnIndex("ID")),Toast.LENGTH_LONG).show();
@@ -340,37 +444,60 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void pieChartSetting(PieChart pieChart){
-        pieChart.setDescription("Sales by employee (In Thousands $) ");
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                Intent intent = new Intent(this, Main2Activity.class);
+                startActivity(intent);
+//                finish();
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void pieChartSetting(PieChart pieChart, final double[] yData, final Bitmap bmpSmall, final Bitmap bmpMedium, final Bitmap bmpLarge){
+//        pieChart.setDescription("Sales by employee (In Thousands $) ");
         pieChart.setRotationEnabled(true);
-        pieChart.setDescription("sdfsdfs");
+        pieChart.setDescription("สัดส่วนไขมันแต่ละขนาด");
         //pieChart.setUsePercentValues(true);
         //pieChart.setHoleColor(Color.BLUE);
         //pieChart.setCenterTextColor(Color.BLACK);
+        pieChart.setDescriptionPosition(270,270);
         pieChart.setHoleRadius(25f);
         pieChart.setTransparentCircleAlpha(0);
-        pieChart.setCenterText("Super Cool Chart");
+        pieChart.setCenterText("Area");
         pieChart.setCenterTextSize(10);
+        addDataSet(yData);
         //pieChart.setDrawEntryLabels(true);
         //pieChart.setEntryLabelTextSize(20);
-
-        addDataSet(yData);
 
         pieChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, Highlight h) {
 
+                Log.d("onPie",e.toString());
                 int pos1 = e.toString().indexOf("(sum): ");
                 String sales = e.toString().substring(pos1 + 7);
 
                 for(int i = 0; i < yData.length; i++){
-                    if(yData[i] == Float.parseFloat(sales)){
+                    if(yData[i] == Double.parseDouble(sales)){
                         pos1 = i;
                         break;
                     }
                 }
-                String employee = xData[pos1 + 1];
-                Toast.makeText(MainActivity.this, "Employee " + employee + "\n" + "Sales: $" + sales + "K", Toast.LENGTH_LONG).show();
+
+                String size = xData[pos1];
+                if (size == "Small"){
+                    bitmapIntoImageView(imageView,bmpSmall);
+                }
+                else if(size == "Medium"){
+                    bitmapIntoImageView(imageView,bmpMedium);
+                }
+                else if(size == "Large"){
+                    bitmapIntoImageView(imageView,bmpLarge);
+                }
+                Toast.makeText(MainActivity.this, size + " Fat" + "\n" + "Areas: " + sales +"%", Toast.LENGTH_LONG).show();
             }
 
             @Override
@@ -380,12 +507,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void addDataSet(float[] yData) {
+    private void addDataSet(double[] yData) {
         ArrayList<PieEntry> yEntrys = new ArrayList<>();
         ArrayList<String> xEntrys = new ArrayList<>();
 
         for(int i = 0; i < yData.length; i++){
-            yEntrys.add(new PieEntry(yData[i] , i));
+            yEntrys.add(new PieEntry((float)yData[i] , i));
         }
 
         for(int i = 1; i < xData.length; i++){
@@ -399,16 +526,16 @@ public class MainActivity extends AppCompatActivity {
 
         //add colors to dataset
         ArrayList<Integer> colors = new ArrayList<>();
-        colors.add(Color.GREEN);
-        colors.add(Color.BLUE);
-        colors.add(Color.RED);
+        colors.add(Color.rgb(0, 255, 255));
+        colors.add(Color.rgb(0, 0, 255));
+        colors.add(Color.rgb(255, 0, 255));
 
         pieDataSet.setColors(colors);
 
         //add legend to chart
-        Legend legend = pieChart.getLegend();
-        legend.setForm(Legend.LegendForm.CIRCLE);
-        legend.setPosition(Legend.LegendPosition.LEFT_OF_CHART);
+//        Legend legend = pieChart.getLegend();
+//        legend.setForm(Legend.LegendForm.CIRCLE);
+//        legend.setPosition(Legend.LegendPosition.LEFT_OF_CHART);
 
         //create pie data object
         PieData pieData = new PieData(pieDataSet);
@@ -471,7 +598,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent,tag);
     }
 
-    Bitmap img;
+    Bitmap img2;
     Bitmap scaled;
     Bitmap imgHalf;
 
@@ -480,16 +607,16 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == TAKE_PICTURE && resultCode == RESULT_OK){
             Bundle b = data.getExtras();
-            img = (Bitmap) b.get("data");
+            img2 = (Bitmap) b.get("data");
 
             try {
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                img2.compress(Bitmap.CompressFormat.PNG, 100, stream);
                 byte[] byteArray = stream.toByteArray();
 
                 //Cleanup
                 stream.close();
-                img.recycle();
+                img2.recycle();
 
                 Intent intent = new Intent(this, DrawingActivity.class);
                 intent.putExtra("img", byteArray);
@@ -517,16 +644,16 @@ public class MainActivity extends AppCompatActivity {
             Bitmap imgFull = BitmapFactory.decodeFile(imagePath, options);
 
             int nh = (int) ( imgFull.getHeight() * (512.0 / imgFull.getWidth()) );
-            img = Bitmap.createScaledBitmap(imgFull, 512, nh, true);
+            img2 = Bitmap.createScaledBitmap(imgFull, 512, nh, true);
 
             try {
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                img.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                img2.compress(Bitmap.CompressFormat.PNG, 100, stream);
                 byte[] byteArray = stream.toByteArray();
 
                 //Cleanup
                 stream.close();
-                img.recycle();
+                img2.recycle();
                 imgFull.recycle();
 
                 Intent intent = new Intent(this, DrawingActivity.class);
@@ -543,68 +670,38 @@ public class MainActivity extends AppCompatActivity {
 
             cursor.close();
         }
-
-//        if (requestCode == tag && resultCode == RESULT_OK){
-//            Bundle b = data.getExtras();
-//            img = (Bitmap) b.get("data");
-//            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
-//            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
-//
-//            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
-//            new MainActivity.UploadImage(img,"test").execute();
-//            //recycle Bitmap object
-////            if(img!=null)
-////            {
-////                img.recycle();
-////                img=null;
-////            }
-//
-//            imageView.setImageBitmap(imgHalf);
-////            new MainActivity.UploadImage(img,"test").execute();
-//        }
-//        if (requestCode == SELECT_PHOTO && resultCode == RESULT_OK && data != null) {
-//            // Let's read picked image data - its URI
-//            Uri pickedImage = data.getData();
-//            // Let's read picked image path using content resolver
-//            String[] filePath = { MediaStore.Images.Media.DATA };
-//            Cursor cursor = getContentResolver().query(pickedImage, filePath, null, null, null);
-//            cursor.moveToFirst();
-//            String imagePath = cursor.getString(cursor.getColumnIndex(filePath[0]));
-//
-//            BitmapFactory.Options options = new BitmapFactory.Options();
-//            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-//            img = BitmapFactory.decodeFile(imagePath, options);
-//            int nh = (int) ( img.getHeight() * (512.0 / img.getWidth()) );
-//            imgHalf = Bitmap.createScaledBitmap(img, 512, nh, true);
-//            //scaled
-//            scaled = Bitmap.createScaledBitmap(img, 512, nh, true);
-//
-//            Log.d("Path","Path : " + imagePath);
-//            cursor.close();
-//        }
     }
 
+    int counter = 0;
     public void previewImg(View view) {
 
-        imageView.buildDrawingCache();
-        Bitmap bmap = imageView.getDrawingCache();
+        imageView.setImageBitmap(img);
+//        if (counter%2 == 0) {
+//            imageView.setImageBitmap(imgResult);
+//        }
+//        else {
+//            imageView.setImageBitmap(img);
+//        }
+//        counter++;
 
-        final Dialog nagDialog = new Dialog(MainActivity.this,android.R.style.Theme_Translucent_NoTitleBar);
-        nagDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
-        nagDialog.setCancelable(false);
-        nagDialog.setContentView(R.layout.dialog_picture);
-        Button btnClose = (Button)nagDialog.findViewById(R.id.btnIvClose);
-        ImageView ivPreview = (ImageView)nagDialog.findViewById(R.id.iv_preview_image);
-//        ivPreview.setImageResource(R.mipmap.ic_launcher);
-        ivPreview.setImageBitmap(bmap);
-
-        btnClose.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View arg0) {
-                nagDialog.dismiss();
-            }
-        });
-        nagDialog.show();
+//        imageView.buildDrawingCache();
+//        Bitmap bmap = imageView.getDrawingCache();
+//
+//        final Dialog nagDialog = new Dialog(MainActivity.this,android.R.style.Theme_Translucent_NoTitleBar);
+//        nagDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+//        nagDialog.setCancelable(false);
+//        nagDialog.setContentView(R.layout.dialog_picture);
+//        Button btnClose = (Button)nagDialog.findViewById(R.id.btnIvClose);
+//        ImageView ivPreview = (ImageView)nagDialog.findViewById(R.id.iv_preview_image);
+//        ivPreview.setImageBitmap(bmap);
+//
+//        btnClose.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View arg0) {
+//                nagDialog.dismiss();
+//            }
+//        });
+//        nagDialog.show();
     }
 
     public Uri getImageUri(Context inContext, Bitmap inImage) {
@@ -627,6 +724,10 @@ public class MainActivity extends AppCompatActivity {
         shareIntent.setType("image/jpg");
         shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
         startActivity(Intent.createChooser(shareIntent, "Share image using"));
+    }
+    public void buMoreInfo(View view) {
+        buMoreInfo.setVisibility(View.GONE);
+        LLInfo.setVisibility(View.VISIBLE);
     }
 
     // get news from server
@@ -718,111 +819,6 @@ public class MainActivity extends AppCompatActivity {
             inputStream.close();
         }catch (Exception ex){}
         return linereultcal;
-    }
-
-    private class UploadImage extends AsyncTask<Void,Void,Void> {
-
-        Bitmap image;
-        String name;
-        JSONObject jsonObject;
-        String result;
-        ByteArrayOutputStream byteArrayOutputStream;
-
-        public UploadImage(Bitmap image,String name){
-            super();
-            this.image = image;
-            this.name = "test";
-        }
-
-        @Override
-        protected void onPreExecute(){
-            bar.setVisibility(View.VISIBLE);
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            byteArrayOutputStream = new ByteArrayOutputStream();
-            image.compress(Bitmap.CompressFormat.JPEG,50,byteArrayOutputStream);
-            String encodedImage = Base64.encodeToString(byteArrayOutputStream.toByteArray(), Base64.DEFAULT);
-
-//            if(img!=null)
-//            {
-//                img.recycle();
-//                img=null;
-//            }
-
-            Log.d("Image encode", "Image encode = " + encodedImage);
-            try {
-
-                //URL url = new URL("http://supab.net23.net/uploadImg.php");
-//                URL url = new URL("http://192.168.1.64/beef/uploadImg.php");
-                URL url = new URL("http://madlab.cpe.ku.ac.th/supab/uploadImg.php");
-
-                long time= System.currentTimeMillis();
-                Date date = new Date();
-                Log.d("Time Class ", " Time value in millisecinds "+time);
-                Log.d("Date Class ", " Date "+date);
-
-                HttpURLConnection connection = (HttpURLConnection)url.openConnection();
-                jsonObject = new JSONObject();
-                jsonObject.put("name", name);
-                jsonObject.put("image", encodedImage);
-                String data = jsonObject.toString();
-                connection.setDoOutput(true);
-                connection.setDoInput(true);
-                connection.setRequestMethod("POST");
-                connection.setRequestProperty("USER-AGENT", "Mozilla/5.0");
-                connection.setRequestProperty("ACCEPT-LANGUAGE", "en-US,en;0.5");
-                connection.setFixedLengthStreamingMode(data.getBytes().length);
-                connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-                OutputStream out = new BufferedOutputStream(connection.getOutputStream());
-                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"));
-                writer.write(data);
-                Log.d("Tester", "Data to php = " + data);
-                writer.flush();
-                writer.close();
-                out.close();
-                connection.connect();
-
-                InputStream in = new BufferedInputStream(connection.getInputStream());
-                BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        in, "UTF-8"));
-                StringBuilder sb = new StringBuilder();
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line);
-                }
-                in.close();
-//                final String result = sb.toString();
-                result = sb.toString();
-                final String[] items = result.split(",");
-                Log.d("Tester", "Response from php = " + result);
-                Log.d("String", "String = " + items);
-                txtAnswer.post(new Runnable() {
-                    public void run() {
-                        txtAnswer.setText(items[0]);
-                        fatProgress.setProgress((int)(Double.parseDouble(items[1])));
-                        txtSFat.setText(items[2]);
-                        txtMFat.setText(items[3]);
-                        txtLFat.setText(items[4]);
-                        rating.setRating(Integer.parseInt(items[7]));
-                        scrollView.setVisibility(View.VISIBLE);
-                    }
-                });
-                connection.disconnect();
-            } catch (Exception e) {
-                Log.d("Vicky", "Error Encountered");
-                e.printStackTrace();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-            bar.setVisibility(View.GONE);
-        }
     }
 
     private boolean isNetworkAvailable() {

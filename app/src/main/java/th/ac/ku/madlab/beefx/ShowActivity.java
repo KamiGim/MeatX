@@ -1,5 +1,7 @@
 package th.ac.ku.madlab.beefx;
 
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -8,6 +10,7 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -19,10 +22,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
-import android.widget.ListAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
@@ -63,7 +65,7 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.main2, menu);
+        getMenuInflater().inflate(R.menu.main_show, menu);
         return true;
     }
 
@@ -76,6 +78,23 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Delete all data")
+                    .setMessage("Are you sure you want to delete all data?")
+                    .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            dbManager.Delete(null,null);
+                            finish();
+                            startActivity(getIntent());
+                        }
+                    })
+                    .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int which) {
+                            // do nothing
+                        }
+                    })
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .show();
             return true;
         }
 
@@ -128,16 +147,20 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
 //            Toast.makeText(getApplicationContext(),tableData,Toast.LENGTH_LONG).show();
         }
 
-        myadapter=new MyCustomAdapter(listnewsData);
+        myadapter=new MyCustomAdapter(this,listnewsData);
+        final Context context = getBaseContext();
+
         ListView lsNews=(ListView)findViewById(R.id.LVNews);
         lsNews.setAdapter(myadapter);//intisal with data
     }
 
     private class MyCustomAdapter extends BaseAdapter {
         public ArrayList<AdapterItems> listnewsDataAdpater ;
+        public Context mcon;
 
-        public MyCustomAdapter(ArrayList<AdapterItems>  listnewsDataAdpater) {
+        public MyCustomAdapter(Context con,ArrayList<AdapterItems>  listnewsDataAdpater) {
             this.listnewsDataAdpater=listnewsDataAdpater;
+            this.mcon = con;
         }
 
 
@@ -160,32 +183,44 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
         public View getView(int position, View convertView, ViewGroup parent)
         {
             LayoutInflater mInflater = getLayoutInflater();
-            View myView = mInflater.inflate(R.layout.info_layout, null);
+            convertView = mInflater.inflate(R.layout.info_layout, null);
 
             final   AdapterItems s = listnewsDataAdpater.get(position);
+            LinearLayout LLAdapterList = (LinearLayout) convertView.findViewById(R.id.LLAdapterList);
 
-            TextView tvID=( TextView)myView.findViewById(R.id.tvID);
+            TextView tvID=( TextView)convertView.findViewById(R.id.tvID);
             tvID.setText(Html.fromHtml("<b>" + "ID : " + "</b>" + String.valueOf( s.ID)));
 
-            TextView tvFat=( TextView)myView.findViewById(R.id.tvFat);
+            TextView tvFat=( TextView)convertView.findViewById(R.id.tvFat);
             tvFat.setText(Html.fromHtml("<b>" + "FatPercent : " + "</b>" + Double.toString(s.FatPercent)));
 
-            TextView tvSdX=( TextView)myView.findViewById(R.id.tvSdX);
+            TextView tvSdX=( TextView)convertView.findViewById(R.id.tvSdX);
             tvSdX.setText(Html.fromHtml("<b>" + "SdX : " + "</b>" + Double.toString(s.SdX)));
 
-            TextView tvSdY=( TextView)myView.findViewById(R.id.tvSdY);
+            TextView tvSdY=( TextView)convertView.findViewById(R.id.tvSdY);
             tvSdY.setText(Html.fromHtml("<b>" + "SdY : " + "</b>" + Double.toString(s.SdY)));
 
-            TextView tvTime=( TextView)myView.findViewById(R.id.tvTime);
+            TextView tvTime=( TextView)convertView.findViewById(R.id.tvTime);
             tvTime.setText(s.CreateTime);
 
-            ImageView iv = (ImageView)myView.findViewById(R.id.ivOri);
+            ImageView iv = (ImageView)convertView.findViewById(R.id.ivOri);
             ByteArrayInputStream imageStream = new ByteArrayInputStream(s.img);
             Bitmap theImage= BitmapFactory.decodeStream(imageStream);
             iv.setImageBitmap(theImage);
 
 
-            return myView;
+            LLAdapterList.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Intent intent = new Intent(mcon,DetailActivity.class);
+                    intent.putExtra("ID",String.valueOf( s.ID));
+                    mcon.startActivity(intent);
+                }
+            });
+
+
+
+            return convertView;
         }
 
     }
