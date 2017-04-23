@@ -15,15 +15,15 @@ import android.os.Environment;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.os.Bundle;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
@@ -40,7 +40,7 @@ public class DrawingActivity extends AppCompatActivity implements GoogleApiClien
     LinearLayout mDrawingPad;
     Bitmap img;
     Drawable d;
-    ImageButton reset_button;
+    Button reset_button;
 
     private GoogleApiClient mGoogleApiClient;
     private Location mLocation;
@@ -81,7 +81,7 @@ public class DrawingActivity extends AppCompatActivity implements GoogleApiClien
         mDrawingPad=(LinearLayout)findViewById(R.id.DrawingPad);
         mDrawingPad.addView(mDrawingView);
 
-        reset_button = (ImageButton)findViewById(R.id.buReset);
+        reset_button = (Button)findViewById(R.id.buReset);
 
         File dir= Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM);
         File file = new File(dir,"resize.png");
@@ -162,7 +162,7 @@ public class DrawingActivity extends AppCompatActivity implements GoogleApiClien
             // mLatitudeTextView.setText(String.valueOf(mLocation.getLatitude()));
             //mLongitudeTextView.setText(String.valueOf(mLocation.getLongitude()));
         } else {
-            Toast.makeText(this, "Location not Detected", Toast.LENGTH_SHORT).show();
+//            Toast.makeText(this, "Location not Detected", Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -221,7 +221,7 @@ public class DrawingActivity extends AppCompatActivity implements GoogleApiClien
         String msg = "Updated Location: " +
                 Double.toString(location.getLatitude()) + "," +
                 Double.toString(location.getLongitude());
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+//        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
 
         latitude = location.getLatitude();
         longtitude = location.getLongitude();

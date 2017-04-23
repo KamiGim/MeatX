@@ -38,6 +38,12 @@ public class ImgProcessing {
     double areaLarge = 0;
     double[] xpos;
     double[] ypos;
+    double[] xpos_s;
+    double[] ypos_s;
+    double[] xpos_m;
+    double[] ypos_m;
+    double[] xpos_l;
+    double[] ypos_l;
     int w;
     int h;
     int totalNum;
@@ -184,8 +190,7 @@ public class ImgProcessing {
         h = scaled.getHeight();
         Mat imgMat = new Mat(h, w, CvType.CV_8UC3);
         Utils.bitmapToMat(scaled, imgMat);
-        Mat tmp = new Mat(h, w, CvType.CV_8UC3);
-        Utils.bitmapToMat(scaled, tmp);
+        Mat tmp = imgMat.clone();
 
         Mat imgMatOri = new Mat(h, w, CvType.CV_8UC3);
         Utils.bitmapToMat(original, imgMatOri);
@@ -211,7 +216,7 @@ public class ImgProcessing {
             }
         }
 
-        Log.d("contours.size() :", Integer.toString(contours.size()));
+//        Log.d("contours.size() :", Integer.toString(contours.size()));
 
         Mat blank = new Mat(h, w, CvType.CV_8UC3, new Scalar(0, 0, 0));
         Imgproc.drawContours(blank, contours, maxValIdx, new Scalar(255, 255, 255), -1);
@@ -223,8 +228,24 @@ public class ImgProcessing {
         Core.bitwise_and(imgMatOri, imgMatOri, beef, blank);
         Mat gray = new Mat();
         Imgproc.cvtColor(beef, gray, Imgproc.COLOR_RGB2GRAY);
+
+//        Mat uncropped = gray;
+//        Rect roi = Imgproc.boundingRect(contours.get(maxValIdx));
+//        int x1 = roi.x;
+//        int y1 = roi.y;
+//        int h1 = roi.height;
+//        int w1 = roi.width;
+//        Mat cropped = uncropped.submat(roi);
+//        cropped = imadjust2(cropped,1);
+
         Mat fat = new Mat();
         Mat grayMod = imadjust(gray,1);
+
+//        Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
+//        result = Bitmap.createBitmap(w1, h1, conf); // this creates a MUTABLE bitmap
+//
+//        Log.d("boundingRect",Integer.toString(x1)+","+Integer.toString(y1)+","+Integer.toString(h1)+","+
+//                Integer.toString(w1));
 
         List<MatOfPoint> contours_beef = new ArrayList<>();
         Imgproc.findContours(blank, contours_beef, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -239,14 +260,14 @@ public class ImgProcessing {
 //        Mat fat = new Mat();
 
 //        Imgproc.threshold(gray, gray, 0, 255, Imgproc.THRESH_OTSU);
-        Imgproc.threshold(grayMod, grayMod, 130, 255,Imgproc.THRESH_BINARY);
+        Imgproc.threshold(grayMod, gray, 130, 255,Imgproc.THRESH_BINARY);
 
         // Extra Part
-        Imgproc.dilate(grayMod, grayMod, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
-        Imgproc.erode(grayMod, grayMod, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
-        Imgproc.morphologyEx(grayMod,grayMod,Imgproc.MORPH_OPEN,Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(1, 1)));
+//        Imgproc.dilate(gray, gray, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
+//        Imgproc.erode(gray, gray, Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(2, 2)));
+//        Imgproc.morphologyEx(gray,gray,Imgproc.MORPH_OPEN,Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(1, 1)));
 
-        Core.bitwise_and(grayMod, blank, fat);
+        Core.bitwise_and(gray, blank, fat);
 
         List<MatOfPoint> contours_fat = new ArrayList<>();
 //        Imgproc.findContours(fat, contours_fat, new Mat(), Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE);
@@ -265,6 +286,13 @@ public class ImgProcessing {
 
         xpos = new double[contours_fat.size()];
         ypos = new double[contours_fat.size()];
+
+        List<Double> xpos_s_list = new ArrayList<Double>();
+        List<Double> ypos_s_list = new ArrayList<Double>();
+        List<Double> xpos_m_list = new ArrayList<Double>();
+        List<Double> ypos_m_list = new ArrayList<Double>();
+        List<Double> xpos_l_list = new ArrayList<Double>();
+        List<Double> ypos_l_list = new ArrayList<Double>();
 
 //        Mat tmpSmall = new Mat(h, w, CvType.CV_8UC3, new Scalar(0, 0, 0));
 //        Mat tmpMedium = new Mat(h, w, CvType.CV_8UC3, new Scalar(0, 0, 0));
@@ -297,18 +325,45 @@ public class ImgProcessing {
                 countSmall++;
                 areaSmall = areaSmall + contourArea;
                 Imgproc.drawContours(tmpSmall, contours_fat, contourIdx, new Scalar(0, 255, 255), contourSize);
+                xpos_s_list.add((double) x);
+                ypos_s_list.add((double) y);
             } else if (contourArea > 100 && contourArea < 500) {
                 Imgproc.drawContours(beef, contours_fat, contourIdx, new Scalar(0, 0, 255), contourSize);
                 countMedium++;
                 areaMedium = areaMedium + contourArea;
                 Imgproc.drawContours(tmpMedium, contours_fat, contourIdx, new Scalar(0, 0, 255), contourSize);
+                xpos_m_list.add((double) x);
+                ypos_m_list.add((double) y);
             } else {
                 Imgproc.drawContours(beef, contours_fat, contourIdx, new Scalar(255, 0, 255), contourSize);
                 countLarge++;
                 areaLarge = areaLarge + contourArea;
                 Imgproc.drawContours(tmpLarge, contours_fat, contourIdx, new Scalar(255, 0, 255), contourSize);
+                xpos_l_list.add((double) x);
+                ypos_l_list.add((double) y);
             }
         }
+
+        xpos_s = new double[xpos_s_list.size()];
+        ypos_s = new double[ypos_s_list.size()];
+        xpos_m = new double[xpos_m_list.size()];
+        ypos_m = new double[ypos_m_list.size()];
+        xpos_l = new double[xpos_l_list.size()];
+        ypos_l = new double[ypos_l_list.size()];
+
+        for (int i = 0; i < xpos_s.length; i++) {
+            xpos_s[i] = xpos_s_list.get(i);
+            ypos_s[i] = ypos_s_list.get(i);
+        }
+        for (int i = 0; i < xpos_m.length; i++) {
+            xpos_m[i] = xpos_m_list.get(i);
+            ypos_m[i] = ypos_m_list.get(i);
+        }
+        for (int i = 0; i < xpos_l.length; i++) {
+            xpos_l[i] = xpos_l_list.get(i);
+            ypos_l[i] = ypos_l_list.get(i);
+        }
+
         Utils.matToBitmap(beef, result);
         Utils.matToBitmap(tmpSmall, bmpSmall);
         Utils.matToBitmap(tmpMedium, bmpMedium);
@@ -650,6 +705,9 @@ public class ImgProcessing {
             if(arr[i]>key) {
                 smallest = i;
                 break;
+            }
+            else if (i == 255){
+                smallest = i;
             }
         }
 

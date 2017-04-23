@@ -138,6 +138,7 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
 //            String tableData="";
             do {
                 listnewsData.add(new AdapterItems(cursor.getInt(cursor.getColumnIndex("ID"))
+                        ,cursor.getDouble( cursor.getColumnIndex("grade"))
                         ,cursor.getDouble( cursor.getColumnIndex("fatPercent"))
                         ,cursor.getDouble(cursor.getColumnIndex("sdX"))
                         ,cursor.getDouble(cursor.getColumnIndex("sdY"))
@@ -189,7 +190,7 @@ public class ShowActivity extends AppCompatActivity implements NavigationView.On
             LinearLayout LLAdapterList = (LinearLayout) convertView.findViewById(R.id.LLAdapterList);
 
             TextView tvID=( TextView)convertView.findViewById(R.id.tvID);
-            tvID.setText(Html.fromHtml("<b>" + "ID : " + "</b>" + String.valueOf( s.ID)));
+            tvID.setText(Html.fromHtml("<b>" + "Grade : " + "</b>" + String.valueOf( s.Grade)));
 
             TextView tvFat=( TextView)convertView.findViewById(R.id.tvFat);
             tvFat.setText(Html.fromHtml("<b>" + "FatPercent : " + "</b>" + Double.toString(s.FatPercent)));

@@ -24,6 +24,7 @@ public class DBManager {
             "[sdX] FLOAT  NULL,\n" +
             "[sdY] FLOAT  NULL,\n" +
             "[avgDistance] FLOAT  NULL,\n" +
+            "[grade] FLOAT  NULL,\n" +
             "[fatPercent] FLOAT  ,\n" +
             "[areaSmall] FLOAT  ,\n" +
             "[areaMedium] FLOAT  ,\n" +

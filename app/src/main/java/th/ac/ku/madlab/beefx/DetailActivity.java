@@ -11,6 +11,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -48,6 +49,7 @@ public class DetailActivity extends AppCompatActivity {
     Button buMoreInfo;
     LinearLayout LLInfo;
     PieChart pieChart;
+    View rootView;
 
     String[] xData = {"Small", "Medium" , "Large"};
 
@@ -72,6 +74,7 @@ public class DetailActivity extends AppCompatActivity {
         TextView tvSDX = (TextView) findViewById(R.id.tvSDX);
         TextView tvSDY = (TextView) findViewById(R.id.tvSDY);
         LLInfo.setVisibility(View.GONE);
+        rootView = getWindow().getDecorView().findViewById(android.R.id.content);
 
         dbManager = new DBManager(this);
         Intent intent = getIntent();
@@ -87,6 +90,7 @@ public class DetailActivity extends AppCompatActivity {
             txtSFat.setText(cursor.getString( cursor.getColumnIndex("countSmall")));
             txtMFat.setText(cursor.getString( cursor.getColumnIndex("countMedium")));
             txtLFat.setText(cursor.getString( cursor.getColumnIndex("countLarge")));
+            rating.setRating(cursor.getFloat( cursor.getColumnIndex("grade")));
             ByteArrayInputStream imageStream = new ByteArrayInputStream(cursor.getBlob(cursor.getColumnIndex("img")));
             final Bitmap theImage= BitmapFactory.decodeStream(imageStream);
             imageView.setImageBitmap(theImage);
@@ -124,13 +128,61 @@ public class DetailActivity extends AppCompatActivity {
                     }
                 }
             });
+
+            buMoreInfo.setOnClickListener(new View.OnClickListener()
+            {
+                private boolean toggle=false;
+                @Override
+                public void onClick(View v)
+                {
+                    if(toggle)
+                    {
+                        LLInfo.setVisibility(View.GONE);
+                        buMoreInfo.setText("ดูข้อมูลเพิ่มเติม");
+                        toggle=false;
+                    }
+                    else
+                    {
+                        LLInfo.setVisibility(View.VISIBLE);
+                        buMoreInfo.setText("ซ่อนข้อมูล");
+                        toggle=true;
+                    }
+                }
+            });
         }
     }
 
-    public void buMoreInfo(View view) {
-        buMoreInfo.setVisibility(View.GONE);
-        LLInfo.setVisibility(View.VISIBLE);
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            case R.id.headerShare:
+                View screenView = this.rootView;
+                screenView.setDrawingCacheEnabled(true);
+                Bitmap bitmap = Bitmap.createBitmap(screenView.getDrawingCache());
+                screenView.setDrawingCacheEnabled(false);
+
+                Uri bmpUri =  getImageUri(bitmap);
+
+                final Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("image/jpg");
+                shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
+                startActivity(Intent.createChooser(shareIntent, "Share image using"));
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main1, menu);
+        return true;
+    }
+
+
 
     private void pieChartSetting(PieChart pieChart, final double[] yData, final Bitmap bmpSmall, final Bitmap bmpMedium, final Bitmap bmpLarge){
 //        pieChart.setDescription("Sales by employee (In Thousands $) ");
@@ -226,16 +278,5 @@ public class DetailActivity extends AppCompatActivity {
         PieData pieData = new PieData(pieDataSet);
         pieChart.setData(pieData);
         pieChart.invalidate();
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                finish();
-                return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }

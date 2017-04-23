@@ -1,6 +1,5 @@
 package th.ac.ku.madlab.beefx;
 
-
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
@@ -27,6 +26,7 @@ import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
@@ -82,12 +82,12 @@ import java.sql.Blob;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
     ImageView imageView;
-    TextView txtAnswer;
     ProgressBar bar;
     RatingBar rating;
     ArcProgress fatProgress;
@@ -155,8 +155,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void findElement(){
         pieChart = (PieChart) findViewById(R.id.idPieChart);
-
-        txtAnswer = (TextView) findViewById(R.id.textViewSize);
         imageView = (ImageView) findViewById(R.id.imageViewPreview);
         bar = (ProgressBar)findViewById(R.id.progressBar);
         bar.setVisibility(View.INVISIBLE);
@@ -230,16 +228,36 @@ public class MainActivity extends AppCompatActivity {
         double sdX = round(stat.getStdDevX(),2);
         double sdY = round(stat.getStdDevY(),2);
         double avgDistance = round(stat.getAvgDistance(),2);
+        Statistics stat_s = new Statistics(imgPro.xpos_s,imgPro.ypos_s);
+        Statistics stat_m = new Statistics(imgPro.xpos_m,imgPro.ypos_m);
+        Statistics stat_l = new Statistics(imgPro.xpos_l,imgPro.ypos_l);
+        double sdX_s = round(stat_s.getStdDevX(),2);
+        double sdY_s = round(stat_s.getStdDevY(),2);
+        double avgDistance_S = round(stat_s.getAvgDistance(),2);
+        double sdX_m = round(stat_m.getStdDevX(),2);
+        double sdY_m = round(stat_m.getStdDevY(),2);
+        double avgDistance_m = round(stat_m.getAvgDistance(),2);
+        double sdX_l = round(stat_l.getStdDevX(),2);
+        double sdY_l = round(stat_l.getStdDevY(),2);
+        double avgDistance_l = round(stat_l.getAvgDistance(),2);
+
+        Log.d("Statistics",Double.toString(sdX_s)+','+Double.toString(sdY_s)+','+Double.toString(avgDistance_S)+','+
+                Double.toString(sdX_m)+','+Double.toString(sdY_m)+','+Double.toString(avgDistance_m)+','+
+                Double.toString(sdX_l)+','+Double.toString(sdY_l)+','+Double.toString(avgDistance_l));
+
         TextView tvSDX = (TextView) findViewById(R.id.tvSDX);
         TextView tvSDY = (TextView) findViewById(R.id.tvSDY);
         tvSDX.setText(Double.toString(sdX));
         tvSDY.setText(Double.toString(sdY));
         txtAvgDis.setText(Double.toString(avgDistance));
-        txtAnswer.setText(Integer.toString(imgPro.w)+"x"+Integer.toString(imgPro.h));
-        txtSFat.setText(Integer.toString(imgPro.countSmall));
-        txtMFat.setText(Integer.toString(imgPro.countMedium));
-        txtLFat.setText(Integer.toString(imgPro.countLarge));
-        fatProgress.setProgress((int)imgPro.fatPercent);
+        int countSmall = imgPro.countSmall;
+        int countMedium = imgPro.countMedium;
+        int countLarge = imgPro.countLarge;
+        txtSFat.setText(Integer.toString(countSmall));
+        txtMFat.setText(Integer.toString(countMedium));
+        txtLFat.setText(Integer.toString(countLarge));
+        double fatPercent = round(imgPro.fatPercent,2);
+        fatProgress.setProgress((int)fatPercent);
         imgResult = imgPro.result;
 
         imageView.setImageBitmap(imgResult);
@@ -251,6 +269,27 @@ public class MainActivity extends AppCompatActivity {
 
         yData = new double[]{areaSmall,areaMedium , areaLarge};
         pieChartSetting(pieChart,yData,bmpSmall,bmpMed,bmpLarge);
+
+//        NeuronNetwork NN = new NeuronNetwork(fatPercent,countSmall,countMedium,countLarge,avgDistance,sdX,sdY,areaSmall,areaMedium,areaLarge,avgDistance_S,avgDistance_m,avgDistance_l);
+        double[] dataNN = {fatPercent,avgDistance,sdX,sdY,avgDistance_S,avgDistance_m,avgDistance_l,areaSmall,areaMedium,areaLarge};
+        NeuralNetwork NN1 = new NeuralNetwork(dataNN);
+        double[] grades = NN1.getGrades();
+        for (int i=0;i <grades.length;i++){
+            Log.d("Grade",Double.toString(grades[i]));
+        }
+        int maxIndex = 0;
+        double max = 0;
+        for (int i = 0; i < grades.length; i++) {
+            if (grades[i] > max) {
+                max = grades[i];
+                maxIndex = i;
+            }
+        }
+
+        double[] gradesAll = {2,3,3.5,4,4.5,5};
+        double gradeResult = gradesAll[maxIndex];
+        rating.setRating((float)gradeResult);
+
 
         final Bitmap finalImgOri = imgOri;
 
@@ -276,12 +315,29 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        buMoreInfo.setOnClickListener(new View.OnClickListener()
+        {
+            private boolean toggle=false;
+            @Override
+            public void onClick(View v)
+            {
+                if(toggle)
+                {
+                    LLInfo.setVisibility(View.GONE);
+                    buMoreInfo.setText("ดูข้อมูลเพิ่มเติม");
+                    toggle=false;
+                }
+                else
+                {
+                    LLInfo.setVisibility(View.VISIBLE);
+                    buMoreInfo.setText("ซ่อนข้อมูล");
+                    toggle=true;
+                }
+            }
+        });
+
         RandomName rn = new RandomName();
         String tmpName = rn.randomIdentifier();
-        double fatPercent = round(imgPro.fatPercent,2);
-        int countSmall = imgPro.countSmall;
-        int countMedium = imgPro.countMedium;
-        int countLarge = imgPro.countLarge;
 
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         img.compress(Bitmap.CompressFormat.PNG,50,byteArrayOutputStream);
@@ -302,6 +358,7 @@ public class MainActivity extends AppCompatActivity {
         values.put("device_id",deviceId);
         values.put("sdX",sdX);
         values.put("sdY",sdY);
+        values.put("grade",gradeResult);
         values.put("avgDistance",avgDistance);
         values.put("fatPercent",fatPercent);
         values.put("countSmall",countSmall);
@@ -345,6 +402,7 @@ public class MainActivity extends AppCompatActivity {
                     deviceId = cursor.getString( cursor.getColumnIndex("device_id"));
                     sdX = cursor.getDouble(cursor.getColumnIndex("sdX"));
                     sdY = cursor.getDouble( cursor.getColumnIndex("sdY"));
+                    double grade1 = cursor.getDouble( cursor.getColumnIndex("grade"));
                     avgDistance = cursor.getDouble( cursor.getColumnIndex("avgDistance"));
                     fatPercent = cursor.getDouble( cursor.getColumnIndex("fatPercent"));
                     countSmall = cursor.getInt( cursor.getColumnIndex("countSmall"));
@@ -368,6 +426,7 @@ public class MainActivity extends AppCompatActivity {
                     values1.put("device_id",deviceId);
                     values1.put("sdX",sdX);
                     values1.put("sdY",sdY);
+                    values1.put("grade",grade1);
                     values1.put("avgDistance",avgDistance);
                     values1.put("fatPercent",fatPercent);
                     values1.put("countSmall",countSmall);
@@ -384,48 +443,30 @@ public class MainActivity extends AppCompatActivity {
                     values1.put("imgFatLarge",imgBlobL);
                     values1.put("status","1");
                     values1.put("created_at", time);
-                    //values.put(DBManager.ColID,RecordID);
                     String[] SelectionArgs={String.valueOf(cursor.getString(cursor.getColumnIndex("ID")))};
-//                    dbManager.Update(values1,"ID=?",SelectionArgs);
 
                     long id= dbManager.Update(values1,"ID=?",SelectionArgs);
-                    if (id>0)
-                        Toast.makeText(getApplicationContext(),"Data is updated and user id:"
-                                +cursor.getString(cursor.getColumnIndex("ID")),Toast.LENGTH_LONG).show();
-                    else
-                        Toast.makeText(getApplicationContext(),"cannot update",Toast.LENGTH_LONG).show();
+//                    if (id>0)
+//                        Toast.makeText(getApplicationContext(),"Data is updated and user id:" +cursor.getString(cursor.getColumnIndex("ID")),Toast.LENGTH_LONG).show();
+//                    else
+//                        Toast.makeText(getApplicationContext(),"cannot update",Toast.LENGTH_LONG).show();
 
                     new MyAsyncTaskgetNews().execute(url,longtitude,latitude,deviceId,Double.toString(sdX),
                             Double.toString(sdY),Double.toString(fatPercent),Integer.toString(countSmall),
                             Integer.toString(countMedium),Integer.toString(countLarge),tmpName,encodedImage);
 
                 }while (cursor.moveToNext());
-                Toast.makeText(getApplicationContext(),"uploaded successfully",Toast.LENGTH_LONG).show();
+//                Toast.makeText(getApplicationContext(),"uploaded successfully",Toast.LENGTH_LONG).show();
             }
         }
 
         values.put("status",isSent);
         long id= dbManager.Insert(values);
-        if (id>0)
-            Toast.makeText(getApplicationContext(),"Data is added and user id:"+id,Toast.LENGTH_LONG).show();
-        else
-            Toast.makeText(getApplicationContext(),"cannot insert",Toast.LENGTH_LONG).show();
+//        if (id>0)
+//            Toast.makeText(getApplicationContext(),"Data is added and user id:"+id,Toast.LENGTH_LONG).show();
+//        else
+//            Toast.makeText(getApplicationContext(),"cannot insert",Toast.LENGTH_LONG).show();
 
-        String[] SelectionsArgs = {"1"};
-        Cursor cursor=dbManager.query(null,"status = ? ",SelectionsArgs,"status");
-        if (cursor.moveToFirst()){
-            String tableData="";
-            do {
-                tableData+=cursor.getString(cursor.getColumnIndex("ID"))+ ","+
-                        cursor.getString( cursor.getColumnIndex("imgPath")) +"::";
-
-            }while (cursor.moveToNext());
-            Toast.makeText(getApplicationContext(),tableData,Toast.LENGTH_LONG).show();
-        }
-
-//        imageView.setImageBitmap(img);
-        //new MainActivity.UploadImage(img,"test").execute();
-//        scrollView.setVisibility(View.INVISIBLE);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -448,29 +489,41 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
-                Intent intent = new Intent(this, Main2Activity.class);
-                startActivity(intent);
-//                finish();
+                finish();
+                return true;
+            case R.id.headerShare:
+                View screenView = this.rootView;
+                screenView.setDrawingCacheEnabled(true);
+                Bitmap bitmap = Bitmap.createBitmap(screenView.getDrawingCache());
+                screenView.setDrawingCacheEnabled(false);
+                Uri bmpUri =  getImageUri(bitmap);
+                final Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                shareIntent.setType("image/jpg");
+                shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
+                startActivity(Intent.createChooser(shareIntent, "Share image using"));
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main1, menu);
+        return true;
+    }
+
+
+
     private void pieChartSetting(PieChart pieChart, final double[] yData, final Bitmap bmpSmall, final Bitmap bmpMedium, final Bitmap bmpLarge){
-//        pieChart.setDescription("Sales by employee (In Thousands $) ");
         pieChart.setRotationEnabled(true);
         pieChart.setDescription("สัดส่วนไขมันแต่ละขนาด");
-        //pieChart.setUsePercentValues(true);
-        //pieChart.setHoleColor(Color.BLUE);
-        //pieChart.setCenterTextColor(Color.BLACK);
         pieChart.setDescriptionPosition(270,270);
         pieChart.setHoleRadius(25f);
         pieChart.setTransparentCircleAlpha(0);
         pieChart.setCenterText("Area");
         pieChart.setCenterTextSize(10);
         addDataSet(yData);
-        //pieChart.setDrawEntryLabels(true);
-        //pieChart.setEntryLabelTextSize(20);
 
         pieChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
@@ -531,11 +584,6 @@ public class MainActivity extends AppCompatActivity {
         colors.add(Color.rgb(255, 0, 255));
 
         pieDataSet.setColors(colors);
-
-        //add legend to chart
-//        Legend legend = pieChart.getLegend();
-//        legend.setForm(Legend.LegendForm.CIRCLE);
-//        legend.setPosition(Legend.LegendPosition.LEFT_OF_CHART);
 
         //create pie data object
         PieData pieData = new PieData(pieDataSet);
@@ -709,25 +757,6 @@ public class MainActivity extends AppCompatActivity {
         inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
         String path = MediaStore.Images.Media.insertImage(inContext.getContentResolver(), inImage, "Title", null);
         return Uri.parse(path);
-    }
-
-    public void buShare(View view) {
-
-        View screenView = view.getRootView();
-        screenView.setDrawingCacheEnabled(true);
-        Bitmap bitmap = Bitmap.createBitmap(screenView.getDrawingCache());
-        screenView.setDrawingCacheEnabled(false);
-
-        Uri bmpUri =  getImageUri(this,bitmap);
-
-        final Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("image/jpg");
-        shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
-        startActivity(Intent.createChooser(shareIntent, "Share image using"));
-    }
-    public void buMoreInfo(View view) {
-        buMoreInfo.setVisibility(View.GONE);
-        LLInfo.setVisibility(View.VISIBLE);
     }
 
     // get news from server

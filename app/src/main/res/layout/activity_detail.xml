@@ -130,53 +130,11 @@
                         android:stepSize="0.1" />
                 </RelativeLayout>
 
-                <Button
-                    android:id="@+id/buMoreInfo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:onClick="buMoreInfo"
-                    android:text="ดูข้อมูลเพิ่มเติม" />
-
                 <LinearLayout
                     android:id="@+id/LLInfo"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/back"
-                        android:orientation="horizontal"
-                        android:padding="10dp"
-                        android:weightSum="1">
-
-                        <TextView
-                            android:id="@+id/txtLFat"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_gravity="center_vertical"
-                            android:layout_weight="0.5"
-                            android:fontFamily="sans-serif"
-                            android:gravity="bottom"
-                            android:text="ไขมันขนาดใหญ่"
-                            android:textColor="#000000"
-                            android:textSize="20sp"
-                            android:typeface="serif" />
-
-                        <TextView
-                            android:id="@+id/tvLFat"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="0.5"
-                            android:fontFamily="sans-serif"
-                            android:text="-"
-                            android:textAlignment="textEnd"
-                            android:textColor="#ffbf00"
-                            android:textSize="20sp"
-                            android:typeface="serif" />
-
-                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -201,40 +159,6 @@
 
                         <TextView
                             android:id="@+id/tvAvgDis"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:textAlignment="textEnd"
-                            android:layout_weight="0.5"
-                            android:fontFamily="sans-serif"
-                            android:text="-"
-                            android:textColor="#ffbf00"
-                            android:textSize="20sp"
-                            android:typeface="serif" />
-
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/back"
-                        android:orientation="horizontal"
-                        android:padding="10dp"
-                        android:weightSum="1">
-
-                        <TextView
-                            android:id="@+id/txtSize"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="0.5"
-                            android:fontFamily="sans-serif"
-                            android:gravity="center_vertical"
-                            android:text="ขนาดรูปภาพ"
-                            android:textColor="#000000"
-                            android:textSize="20sp"
-                            android:typeface="serif" />
-
-                        <TextView
-                            android:id="@+id/textViewSize"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_weight="0.5"
@@ -324,28 +248,28 @@
                         android:weightSum="1">
 
                         <TextView
-                            android:id="@+id/txtSDY"
+                            android:id="@+id/txtLFat"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_gravity="center_vertical"
                             android:layout_weight="0.5"
                             android:fontFamily="sans-serif"
                             android:gravity="bottom"
-                            android:text="SD_Y"
+                            android:text="ไขมันขนาดใหญ่"
                             android:textColor="#000000"
                             android:textSize="20sp"
                             android:typeface="serif" />
 
                         <TextView
-                            android:id="@+id/tvSDY"
+                            android:id="@+id/tvLFat"
                             android:layout_width="0dp"
                             android:layout_height="match_parent"
                             android:layout_weight="0.5"
                             android:fontFamily="sans-serif"
                             android:text="-"
+                            android:textAlignment="textEnd"
                             android:textColor="#ffbf00"
                             android:textSize="20sp"
-                            android:textAlignment="textEnd"
                             android:typeface="serif" />
 
                     </LinearLayout>
@@ -378,23 +302,57 @@
                             android:layout_weight="0.5"
                             android:fontFamily="sans-serif"
                             android:text="-"
+                            android:textAlignment="textEnd"
                             android:textColor="#ffbf00"
                             android:textSize="20sp"
+                            android:typeface="serif" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/back"
+                        android:orientation="horizontal"
+                        android:padding="10dp"
+                        android:weightSum="1">
+
+                        <TextView
+                            android:id="@+id/txtSDY"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_gravity="center_vertical"
+                            android:layout_weight="0.5"
+                            android:fontFamily="sans-serif"
+                            android:gravity="bottom"
+                            android:text="SD_Y"
+                            android:textColor="#000000"
+                            android:textSize="20sp"
+                            android:typeface="serif" />
+
+                        <TextView
+                            android:id="@+id/tvSDY"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="0.5"
+                            android:fontFamily="sans-serif"
+                            android:text="-"
                             android:textAlignment="textEnd"
+                            android:textColor="#ffbf00"
+                            android:textSize="20sp"
                             android:typeface="serif" />
 
                     </LinearLayout>
 
                 </LinearLayout>
 
-            </LinearLayout>
+                <Button
+                    android:id="@+id/buMoreInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="ดูข้อมูลเพิ่มเติม" />
 
-            <ImageButton
-                android:id="@+id/imageButton2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:onClick="buShare"
-                custom:srcCompat="?attr/actionModeShareDrawable" />
+            </LinearLayout>
 
         </LinearLayout>
     </ScrollView>
